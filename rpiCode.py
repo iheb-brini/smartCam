@@ -1,7 +1,30 @@
+#imports
 import cv2
+import RPi.GPIO as GPIO
+import threading
+import time
+GPIO.setmode(GPIO.BCM)
+GPIO.setup(18, GPIO.OUT)
+pwm = GPIO.PWM(18, 50)
+pwm.start(7)
+GPIO.setwarnings(False)
+
+oldangle=90
+
+def turnleft(oldangle) :
+    angle=oldangle-15
+    duty = angle / 18. + 2
+    pwm.ChangeDutyCycle(duty)
+    return angle
+def turnright(oldangle) :
+    angle=oldangle+15
+    duty = angle / 18. + 2
+    pwm.ChangeDutyCycle(duty)
+    return angle
+
 face_cascade = cv2.CascadeClassifier('data/haarcascade_frontalface_default.xml')
 cam = cv2.VideoCapture(0)
-fourcc = cv2.VideoWriter_fourcc(*'XVID')
+#fourcc = cv2.VideoWriter_fourcc(*'XVID')
 img_counter = 1
 video_counter = 1
 
@@ -22,9 +45,16 @@ while True:
         (x, y, w, h) = faces[0]
         a = x + w / 2
         b = y + h / 2
-        if a > 2*width//3:
+        if a > 2*width//3 and oldangle>30:
+            tl=threading.Thread(target=turnleft,args=(oldangle,))
+            tl.start()
+            tl.join()
+            oldangle=turnleft(oldangle)
             print("<====== Turn left")
         elif a < width//3:
+            tr=threading.Thread(target=turnright,args=(oldangle,))
+            tr.start()
+            tr.join()
             print("Turn right =====>")
 
         cv2.rectangle(frame, (int(x + w / 2), int(y + h / 2)), (int(x + w / 2), int(y + h / 2)), (0, 0, 255), 10)
